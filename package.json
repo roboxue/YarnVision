@@ -10,9 +10,13 @@
     "build": "node build/build.js"
   },
   "dependencies": {
+    "axios": "^0.18.0",
+    "cookie-parser": "^1.4.3",
     "express": "^4.16.2",
+    "qs": "^6.5.1",
     "vue": "^2.5.2",
-    "vuetify": "^1.0.0"
+    "vuetify": "^1.0.0",
+    "lodash": "latest"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.2",

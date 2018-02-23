@@ -2,96 +2,115 @@
   <v-app id="inspire">
     <v-navigation-drawer
       fixed
-      clipped
-      class="grey lighten-4"
       app
+      clipped
+      disable-resize-watcher
       v-model="drawer"
     >
-      <v-list
-        dense
-        class="grey lighten-4"
-      >
-        <template v-for="(item, i) in items">
-          <v-layout
-            row
-            v-if="item.heading"
-            align-center
-            :key="i"
-          >
-            <v-flex xs6>
-              <v-subheader v-if="item.heading">
-                {{ item.heading }}
-              </v-subheader>
-            </v-flex>
-            <v-flex xs6 class="text-xs-right">
-              <v-btn small flat>edit</v-btn>
-            </v-flex>
-          </v-layout>
-          <v-divider
-            dark
-            v-else-if="item.divider"
-            class="my-3"
-            :key="i"
-          ></v-divider>
-          <v-list-tile
-            :key="i"
-            v-else
-            @click=""
-          >
-            <v-list-tile-action>
-              <v-icon>{{ item.icon }}</v-icon>
-            </v-list-tile-action>
-            <v-list-tile-content>
-              <v-list-tile-title class="grey--text">
-                {{ item.text }}
-              </v-list-tile-title>
-            </v-list-tile-content>
-          </v-list-tile>
-        </template>
+      <v-list subheader>
+        <v-subheader>Filter by state</v-subheader>
+        <v-list-tile avatar v-for="(state, i) in availableStates"
+        :key="i">
+          <v-list-tile-action>
+            <v-checkbox v-model="appFilter.states" :value="state"/>
+          </v-list-tile-action>
+          <v-list-tile-content>
+            <v-list-tile-title>{{state}}</v-list-tile-title>
+          </v-list-tile-content>
+        </v-list-tile>
+      </v-list>
+      <v-list>
+        <v-subheader>Filter By Username</v-subheader>
+        <v-list-tile>
+          <v-list-tile-action>
+            <v-icon>account_box</v-icon>
+          </v-list-tile-action>
+          <v-list-tile-content>
+            <v-text-field solo label="Some Username" v-model.lazy="appFilter.user"/>
+          </v-list-tile-content>
+        </v-list-tile>
+        <v-subheader>Filter By Queue</v-subheader>
+        <v-list-tile>
+          <v-list-tile-action>
+            <v-icon>playlist_add</v-icon>
+          </v-list-tile-action>
+          <v-list-tile-content>
+            <v-text-field solo label="Some Queue" v-model.lazy="appFilter.queue"/>
+          </v-list-tile-content>
+        </v-list-tile>
       </v-list>
     </v-navigation-drawer>
-    <v-toolbar color="amber" app absolute clipped-left>
-      <v-toolbar-side-icon @click.native="drawer = !drawer"></v-toolbar-side-icon>
-      <span class="title ml-3 mr-5">Google&nbsp;<span class="text">Keep</span></span>
+    <v-toolbar app absolute clipped-left>
+      <v-toolbar-side-icon @click.native="drawer = !drawer"/>
+      <span class="title ml-3 mr-5">Yarn&nbsp;Vision</span>
       <v-text-field
         solo-inverted
         flat
         label="Search"
         prepend-icon="search"
-      ></v-text-field>
-      <v-spacer></v-spacer>
+      />
+      <v-spacer/>
     </v-toolbar>
     <v-content>
-      <HelloWorld></HelloWorld>
+      <YarnApplications
+        :apps="apps"
+      />
     </v-content>
   </v-app>
 </template>
 
 <script>
-  import HelloWorld from './components/HelloWorld'
+  import YarnApplications from './components/YarnApplications'
+  import axios from 'axios'
+  import Qs from 'qs'
+  import _ from 'lodash'
 
   export default {
     data: () => ({
       drawer: null,
-      items: [
-        { icon: 'lightbulb_outline', text: 'Notes' },
-        { icon: 'touch_app', text: 'Reminders' },
-        { divider: true },
-        { heading: 'Labels' },
-        { icon: 'add', text: 'Create new label' },
-        { divider: true },
-        { icon: 'archive', text: 'Archive' },
-        { icon: 'delete', text: 'Trash' },
-        { divider: true },
-        { icon: 'settings', text: 'Settings' },
-        { icon: 'chat_bubble', text: 'Trash' },
-        { icon: 'help', text: 'Help' },
-        { icon: 'phonelink', text: 'App downloads' },
-        { icon: 'keyboard', text: 'Keyboard shortcuts' }
-      ]
+      apps: [],
+      appFilter: {
+        states: ["RUNNING"],
+        user: "",
+        queue: ""
+      },
+      availableStates: ["ACCEPTED", "RUNNING", "FINISHED", "FAILED", "KILLED"],
+      errorMessage: ""
     }),
     components: {
-      HelloWorld
+      YarnApplications
+    },
+    methods: {
+      loadApps () {
+        let vm = this
+        axios.defaults.baseURL = 'http://localhost:3000'
+        axios.get("/api/ws/v1/cluster/apps", {
+          params: {
+            states: vm.appFilter.states.join(","),
+            user: vm.appFilter.user,
+            queue: vm.appFilter.queue
+          },
+          paramsSerializer: function(params) {
+            return Qs.stringify(_.pickBy(params, _.identity), {arrayFormat: 'brackets'})
+          }
+        }).then((response) => {
+          vm.apps = response.data.apps.app
+        }).catch((error) => {
+          vm.errorMessage = error
+          vm.apps = []
+        })
+      }
+    },
+    watch: {
+      appFilter: {
+        handler(val) {
+          this.loadApps()
+        },
+        deep: true
+      }
+    },
+    mounted () {
+      this.loadApps()
     }
   }
 </script>
