@@ -7,38 +7,50 @@
       disable-resize-watcher
       v-model="drawer"
     >
-      <v-list subheader>
-        <v-subheader>Filter by state</v-subheader>
-        <v-list-tile avatar v-for="(state, i) in availableStates"
-        :key="i">
-          <v-list-tile-action>
-            <v-checkbox v-model="appFilter.states" :value="state"/>
-          </v-list-tile-action>
-          <v-list-tile-content>
-            <v-list-tile-title>{{state}}</v-list-tile-title>
-          </v-list-tile-content>
-        </v-list-tile>
-      </v-list>
-      <v-list>
-        <v-subheader>Filter By Username</v-subheader>
-        <v-list-tile>
-          <v-list-tile-action>
-            <v-icon>account_box</v-icon>
-          </v-list-tile-action>
-          <v-list-tile-content>
-            <v-text-field solo label="Some Username" v-model.lazy="appFilter.user"/>
-          </v-list-tile-content>
-        </v-list-tile>
-        <v-subheader>Filter By Queue</v-subheader>
-        <v-list-tile>
-          <v-list-tile-action>
-            <v-icon>playlist_add</v-icon>
-          </v-list-tile-action>
-          <v-list-tile-content>
-            <v-text-field solo label="Some Queue" v-model.lazy="appFilter.queue"/>
-          </v-list-tile-content>
-        </v-list-tile>
-      </v-list>
+      <v-container fluid>
+        <v-layout row wrap>
+          <v-flex xs12>
+            <v-select
+              :items="availableStates"
+              v-model="appFilter.states"
+              label="Filter by state"
+              prepend-icon="apps"
+              autocomplete
+              chips
+              multiple
+              max-height="400"
+              bottom
+              clearable
+            />
+          </v-flex>
+        </v-layout>
+        <v-layout row wrap>
+          <v-flex xs12>
+            <v-text-field
+              prepend-icon="account_box"
+              clearable
+              label="Filter by username"
+              v-model.lazy="appFilter.user"/>
+          </v-flex>
+        </v-layout>
+        <v-layout row wrap>
+          <v-flex xs12>
+            <v-select
+              prepend-icon="playlist_add"
+              :items="availableQueues"
+              v-model="appFilter.queue"
+              label="Filter by queue"
+              item-text="queueName"
+              item-value="queueName"
+              autocomplete
+              chips
+              bottom
+              clearable
+            />
+          </v-flex>
+        </v-layout>
+      </v-container>
+
     </v-navigation-drawer>
     <v-toolbar app absolute clipped-left>
       <v-toolbar-side-icon @click.native="drawer = !drawer"/>
@@ -70,12 +82,13 @@
       drawer: null,
       apps: [],
       appFilter: {
-        states: ["RUNNING"],
-        user: "",
-        queue: ""
+        states: ['RUNNING'],
+        user: '',
+        queue: ''
       },
-      availableStates: ["ACCEPTED", "RUNNING", "FINISHED", "FAILED", "KILLED"],
-      errorMessage: ""
+      availableStates: ['ACCEPTED', 'RUNNING', 'FINISHED', 'FAILED', 'KILLED'],
+      availableQueues: [],
+      errorMessage: ''
     }),
     components: {
       YarnApplications
@@ -83,27 +96,48 @@
     methods: {
       loadApps () {
         let vm = this
-        axios.defaults.baseURL = 'http://localhost:3000'
-        axios.get("/api/ws/v1/cluster/apps", {
+        axios.get('/api/ws/v1/cluster/apps', {
           params: {
-            states: vm.appFilter.states.join(","),
+            states: vm.appFilter.states.join(','),
             user: vm.appFilter.user,
             queue: vm.appFilter.queue
           },
-          paramsSerializer: function(params) {
+          paramsSerializer: function (params) {
             return Qs.stringify(_.pickBy(params, _.identity), {arrayFormat: 'brackets'})
           }
-        }).then((response) => {
-          vm.apps = response.data.apps.app
-        }).catch((error) => {
-          vm.errorMessage = error
-          vm.apps = []
         })
+          .then((response) => {
+            vm.apps = response.data.apps.app
+          })
+          .catch((error) => {
+            vm.errorMessage = error
+            vm.apps = []
+          })
+      },
+      loadQueues () {
+        let vm = this
+        axios.get('/api/ws/v1/cluster/scheduler')
+          .then((response) => {
+            let queues = []
+            let iterateParentQueue = function (q) {
+              if (_.has(q, 'queues')) {
+                q.queues.queue.forEach(iterateParentQueue)
+              } else {
+                queues.push(q)
+              }
+            }
+            iterateParentQueue(response.data.scheduler.schedulerInfo)
+            vm.availableQueues = queues
+          })
+          .catch((error) => {
+            vm.errorMessage = error
+            vm.availableQueues = []
+          })
       }
     },
     watch: {
       appFilter: {
-        handler(val) {
+        handler (val) {
           this.loadApps()
         },
         deep: true
@@ -111,6 +145,7 @@
     },
     mounted () {
       this.loadApps()
+      this.loadQueues()
     }
   }
 </script>
