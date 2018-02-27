@@ -11,41 +11,49 @@
         <v-layout row wrap>
           <v-flex xs12>
             <v-select
-              :items="availableStates"
               v-model="appFilter.states"
+              :items="availableStates"
               label="Filter by state"
               prepend-icon="apps"
               autocomplete
               chips
               deletableChips
               multiple
-              max-height="400"
               bottom
               clearable
             />
-          </v-flex>
-        </v-layout>
-        <v-layout row wrap>
-          <v-flex xs12>
-            <v-text-field
-              prepend-icon="account_box"
-              clearable
-              label="Filter by username"
-              v-model.lazy="appFilter.user"/>
-          </v-flex>
-        </v-layout>
-        <v-layout row wrap>
-          <v-flex xs12>
             <v-select
-              prepend-icon="playlist_add"
-              :items="availableQueues"
+              v-model="appFilter.user"
+              :items="availableUsers"
+              label="Filter by username"
+              prepend-icon="account_box"
+              autocomplete
+              clearable
+              bottom
+            />
+            <v-select
               v-model="appFilter.queue"
+              :items="availableQueues"
               label="Filter by queue"
+              prepend-icon="playlist_add"
               item-text="queueName"
               item-value="queueName"
               autocomplete
               chips
               deletableChips
+              multiple
+              bottom
+              clearable
+            />
+            <v-select
+              v-model="appFilter.appTypes"
+              :items="availableAppTypes"
+              label="Filter by app type"
+              prepend-icon="description"
+              autocomplete
+              chips
+              deletableChips
+              multiple
               bottom
               clearable
             />
@@ -108,11 +116,14 @@
       resourceManager: localStorage.getItem('resourceManager') || '',
       appFilter: {
         states: ['RUNNING'],
+        appTypes: [],
         user: '',
         queue: ''
       },
       availableStates: ['ACCEPTED', 'RUNNING', 'FINISHED', 'FAILED', 'KILLED'],
       availableQueues: [],
+      availableAppTypes: [],
+      availableUsers: [],
       errorMessage: ''
     }),
     components: {
@@ -127,6 +138,7 @@
           params: {
             states: vm.appFilter.states.join(','),
             user: vm.appFilter.user,
+            applicationTypes: vm.appFilter.appTypes.join(','),
             queue: vm.appFilter.queue
           },
           paramsSerializer: function (params) {
@@ -135,6 +147,8 @@
         })
           .then((response) => {
             vm.loading --
+            vm.availableAppTypes = _.union(vm.availableAppTypes, response.data.apps.app.map(app => app.applicationType))
+            vm.availableUsers = _.union(vm.availableUsers, response.data.apps.app.map(app => app.user)).sort()
             vm.apps = response.data.apps.app
           })
           .catch((error) => {
