@@ -1,11 +1,5 @@
 <template>
-  <a target="_blank" :href="item.trackingUrl" v-if="header.value === 'trackingUrl'">
-    {{item.trackingUI}}
-  </a>
-  <a target="_blank" :href="item.amContainerLogs" v-else-if="header.value === 'amContainerLogs'">
-    Logs
-  </a>
-  <span v-else-if="header.value === 'state'" :class="`${colorByState(item.state)}--text`">
+  <span v-if="header.value === 'state'" :class="`${colorByState(item.state)}--text`">
     {{item[header.value]}}
   </span>
   <span v-else-if="header.value === 'startedTime' || header.value === 'finishedTime'">
@@ -51,7 +45,7 @@
           case 'KILLED':
             return 'warning'
           default:
-            return 'grey darken-1'
+            return 'grey-darken-1'
         }
       }
     },

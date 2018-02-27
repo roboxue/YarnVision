@@ -1,5 +1,5 @@
 <template>
-  <v-app id="inspire">
+  <v-app id="inspire" dark>
     <v-navigation-drawer
       fixed
       app
@@ -17,6 +17,7 @@
               prepend-icon="apps"
               autocomplete
               chips
+              deletableChips
               multiple
               max-height="400"
               bottom
@@ -44,6 +45,7 @@
               item-value="queueName"
               autocomplete
               chips
+              deletableChips
               bottom
               clearable
             />
@@ -55,22 +57,36 @@
     <v-toolbar app absolute clipped-left>
       <v-toolbar-side-icon @click.native="drawer = !drawer"/>
       <span class="title ml-3 mr-5">Yarn&nbsp;Vision</span>
+      <v-dialog v-model="resourceManagerDialog" persistent max-width="500px">
+        <v-btn color="primary" dark slot="activator">{{resourceManager || 'Select a resource manager'}}</v-btn>
+        <v-card>
+          <v-card-title class="headline">Please select a resource manager</v-card-title>
+          <v-card-text>
+            <v-select :loading="loading > 0" :items="resourceManagers" v-model="resourceManager"/>
+          </v-card-text>
+          <v-card-actions>
+            <v-btn flat :loading="loading > 0" @click="loadResourceManagers">
+              <v-icon>refresh</v-icon> Refresh
+            </v-btn>
+            <v-spacer/>
+            <v-btn flat
+                   @click.native="closeResourceManagerDialog"
+                   :disabled="resourceManager === ''"
+                   :loading="loading > 0">Close</v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-dialog>
       <v-btn :loading="loading > 0" @click="loadApps">
         <v-icon>cached</v-icon>
         reload
       </v-btn>
-      <v-text-field
-        solo-inverted
-        flat
-        label="Search"
-        prepend-icon="search"
-      />
       <v-spacer/>
     </v-toolbar>
     <v-content>
       <YarnApplications
         :loading="loading > 0"
         :apps="apps"
+        :resourceManager="resourceManager"
       />
     </v-content>
   </v-app>
@@ -87,6 +103,9 @@
       drawer: null,
       loading: 0,
       apps: [],
+      resourceManagerDialog: false,
+      resourceManagers: [],
+      resourceManager: localStorage.getItem('resourceManager') || '',
       appFilter: {
         states: ['RUNNING'],
         user: '',
@@ -104,6 +123,7 @@
         let vm = this
         vm.loading ++
         axios.get('/api/ws/v1/cluster/apps', {
+          headers: {'X-Resource-Manager': vm.resourceManager},
           params: {
             states: vm.appFilter.states.join(','),
             user: vm.appFilter.user,
@@ -126,7 +146,9 @@
       loadQueues () {
         let vm = this
         vm.loading ++
-        axios.get('/api/ws/v1/cluster/scheduler')
+        axios.get('/api/ws/v1/cluster/scheduler', {
+          headers: {'X-Resource-Manager': vm.resourceManager},
+        })
           .then((response) => {
             vm.loading --
             let queues = []
@@ -145,6 +167,23 @@
             vm.errorMessage = error
             vm.availableQueues = []
           })
+      },
+      loadResourceManagers () {
+        let vm = this
+        vm.loading++
+        axios.get('/resourcemanagers')
+          .then((response) => {
+            vm.resourceManagers = response.data
+            vm.loading--
+          })
+          .catch((error) => {
+            vm.loading--
+            vm.errorMessage = error
+          })
+      },
+      closeResourceManagerDialog () {
+        this.resourceManagerDialog = false
+        localStorage.setItem('resourceManager', this.resourceManager)
       }
     },
     watch: {
@@ -153,11 +192,20 @@
           this.loadApps()
         },
         deep: true
+      },
+      resourceManager: function (val) {
+        this.loadApps()
+        this.loadQueues()
       }
     },
     mounted () {
-      this.loadApps()
-      this.loadQueues()
+      this.loadResourceManagers()
+      if (this.resourceManager === '') {
+        this.resourceManagerDialog = true
+      } else {
+        this.loadApps()
+        this.loadQueues()
+      }
     }
   }
 </script>

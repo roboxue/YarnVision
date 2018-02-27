@@ -1,13 +1,21 @@
 <template>
   <v-container fluid grid-list-md>
+    <v-snackbar
+      :timeout="5000"
+      top
+      v-model="snackbar"
+    >
+      {{ snackbarText }}
+      <v-btn flat color="pink" @click.native="snackbar = false">Close</v-btn>
+    </v-snackbar>
     <v-layout row>
       <v-flex xs12>
         <v-btn-toggle mandatory v-model="viewStyleId">
-          <v-btn flat color="primary">
+          <v-btn flat>
             <v-icon>list</v-icon>
             list view
           </v-btn>
-          <v-btn flat color="primary">
+          <v-btn flat>
             <v-icon>dashboard</v-icon>
             card view
           </v-btn>
@@ -23,14 +31,35 @@
       :headers="visibleHeaders"
     >
       <template slot="items" slot-scope="props">
-        <tr @click="props.expanded = !props.expanded">
+        <tr @click="props.expanded = !props.expanded" style="cursor: pointer;">
           <td v-for="(header, i) in visibleHeaders" :key="i">
             <AppInfoLine :item="props.item" :header="header" :humanizeTimestamp="humanizeTimestamp"/>
           </td>
         </tr>
       </template>
       <template slot="expand" slot-scope="props">
-        
+        <div>
+          <v-btn
+            target="_blank"
+            :href="props.item.trackingUrl"
+            v-if="props.item.trackingUrl">
+            Tracking UI - {{props.item.trackingUI}}
+          </v-btn>
+          <v-btn
+            target="_blank"
+            :href="props.item.amContainerLogs"
+            v-if="props.item.amContainerLogs">
+            Logs
+          </v-btn>
+          <v-btn
+            target="_blank"
+            :href="`${resourceManager}/cluster/app/${props.item.id}`"
+          >Resource Manager View</v-btn>
+          <v-btn
+            color="error"
+            @click="attemptKillApp(props.item.id, props.item.name)"
+          >Kill App</v-btn>
+        </div>
       </template>
     </v-data-table>
 
@@ -66,10 +95,13 @@
 <script>
   import _ from 'lodash'
   import AppInfoLine from './AppInfoLine'
+  import axios from 'axios'
 
   export default {
     data: () => ({
       viewStyleId: 0,
+      snackbar: false,
+      snackbarText: "",
       humanizeTimestamp: true,
       rowsPerPageItems: [8, 16, 32, 64, {text: 'All', value: -1}],
       headers: [
@@ -92,8 +124,6 @@
         {text: 'Preempted Non AM Container', sortable: true, value: 'numNonAMContainerPreempted', visible: false},
         {text: 'Preempted AM Container', sortable: true, value: 'numAMContainerPreempted', visible: false},
 
-        {text: 'TrackingUrl', sortable: false, value: 'trackingUrl', visible: true},
-        {text: 'Container Logs', sortable: false, value: 'amContainerLogs', visible: true},
         {text: 'AM Host Address', sortable: true, value: 'amHostHttpAddress', visible: true},
         {text: 'AM RPC Address', sortable: false, value: 'amRPCAddress', visible: false},
 
@@ -137,9 +167,29 @@
           default:
             return 'grey darken-1'
         }
+      },
+      attemptKillApp (appId, appName) {
+        let vm = this
+        let confirmedName = prompt("Type application name again to confirm killing the application");
+        if (confirmedName != null && confirmedName === appName) {
+          console.log(vm.resourceManager)
+          axios.put(`/api/ws/v1/cluster/apps/${appId}/state`,  {
+            state: "KILLED"
+          }, {
+            headers: {'X-Resource-Manager': vm.resourceManager}
+          }).then((response) => {
+            vm.snackbarText = `Requested to killed ${appName}, reload to confirm`
+            vm.snackbar = true
+          }).catch((error) => {
+
+          })
+        } else {
+          vm.snackbarText = `App name mismatch, no action`
+          vm.snackbar = true
+        }
       }
     },
-    props: ['apps', 'loading'],
+    props: ['apps', 'loading', 'resourceManager'],
     components: {
       AppInfoLine
     }
