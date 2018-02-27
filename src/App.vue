@@ -55,6 +55,10 @@
     <v-toolbar app absolute clipped-left>
       <v-toolbar-side-icon @click.native="drawer = !drawer"/>
       <span class="title ml-3 mr-5">Yarn&nbsp;Vision</span>
+      <v-btn :loading="loading > 0" @click="loadApps">
+        <v-icon>cached</v-icon>
+        reload
+      </v-btn>
       <v-text-field
         solo-inverted
         flat
@@ -65,6 +69,7 @@
     </v-toolbar>
     <v-content>
       <YarnApplications
+        :loading="loading > 0"
         :apps="apps"
       />
     </v-content>
@@ -80,6 +85,7 @@
   export default {
     data: () => ({
       drawer: null,
+      loading: 0,
       apps: [],
       appFilter: {
         states: ['RUNNING'],
@@ -96,6 +102,7 @@
     methods: {
       loadApps () {
         let vm = this
+        vm.loading ++
         axios.get('/api/ws/v1/cluster/apps', {
           params: {
             states: vm.appFilter.states.join(','),
@@ -107,17 +114,21 @@
           }
         })
           .then((response) => {
+            vm.loading --
             vm.apps = response.data.apps.app
           })
           .catch((error) => {
+            vm.loading --
             vm.errorMessage = error
             vm.apps = []
           })
       },
       loadQueues () {
         let vm = this
+        vm.loading ++
         axios.get('/api/ws/v1/cluster/scheduler')
           .then((response) => {
+            vm.loading --
             let queues = []
             let iterateParentQueue = function (q) {
               if (_.has(q, 'queues')) {
@@ -127,9 +138,10 @@
               }
             }
             iterateParentQueue(response.data.scheduler.schedulerInfo)
-            vm.availableQueues = queues
+            vm.availableQueues = _.sortBy(queues, ['queueName'])
           })
           .catch((error) => {
+            vm.loading --
             vm.errorMessage = error
             vm.availableQueues = []
           })
@@ -151,15 +163,4 @@
 </script>
 
 <style>
-  #keep main .container {
-    height: 660px;
-  }
-
-  .navigation-drawer__border {
-    display: none;
-  }
-
-  .text {
-    font-weight: 400;
-  }
 </style>

@@ -13,10 +13,11 @@
     "axios": "^0.18.0",
     "cookie-parser": "^1.4.3",
     "express": "^4.16.2",
+    "lodash": "latest",
+    "moment": "^2.20.1",
     "qs": "^6.5.1",
     "vue": "^2.5.2",
-    "vuetify": "^1.0.0",
-    "lodash": "latest"
+    "vuetify": "^1.0.0"
   },
   "devDependencies": {
     "autoprefixer": "^7.1.2",
