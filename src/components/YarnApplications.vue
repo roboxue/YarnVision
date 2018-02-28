@@ -1,8 +1,8 @@
 <template>
   <v-container fluid grid-list-md>
     <v-snackbar
+      bottom
       :timeout="5000"
-      top
       v-model="snackbar"
     >
       {{ snackbarText }}
@@ -23,49 +23,51 @@
       </v-flex>
     </v-layout>
 
-    <v-data-table
-      v-if="viewStyle === 'table'"
-      :loading="loading"
-      :items="apps"
-      :rows-per-page-items="rowsPerPageItems"
-      :headers="visibleHeaders"
-      :search="searchByAppName"
-      :custom-filter="appFilter"
-    >
-      <template slot="items" slot-scope="props">
-        <tr @click="props.expanded = !props.expanded" style="cursor: pointer;">
-          <td v-for="(header, i) in visibleHeaders" :key="i">
-            <AppInfoLine :item="props.item" :header="header" :humanizeTimestamp="humanizeTimestamp"/>
-          </td>
-        </tr>
-      </template>
-      <template slot="expand" slot-scope="props">
-        <div>
-          <v-btn
-            target="_blank"
-            :href="props.item.trackingUrl"
-            v-if="props.item.trackingUrl">
-            Tracking UI - {{props.item.trackingUI}}
-          </v-btn>
-          <v-btn
-            target="_blank"
-            :href="props.item.amContainerLogs"
-            v-if="props.item.amContainerLogs">
-            Logs
-          </v-btn>
-          <v-btn
-            target="_blank"
-            :href="`${resourceManager}/cluster/app/${props.item.id}`"
-          >Resource Manager View
-          </v-btn>
-          <v-btn
-            color="error"
-            @click="attemptKillApp(props.item.id, props.item.name)"
-          >Kill App
-          </v-btn>
-        </div>
-      </template>
-    </v-data-table>
+    <template v-if="viewStyle === 'table'">
+      <p class="pl-2 pt-2 title">Click row to reveal actions</p>
+      <v-data-table
+        :loading="loading"
+        :items="apps"
+        :rows-per-page-items="rowsPerPageItems"
+        :headers="visibleHeaders"
+        :search="searchByAppName"
+        :custom-filter="appFilter"
+      >
+        <template slot="items" slot-scope="props">
+          <tr @click="props.expanded = !props.expanded" style="cursor: pointer;">
+            <td v-for="(header, i) in visibleHeaders" :key="i">
+              <AppInfoLine :item="props.item" :header="header" :humanizeTimestamp="humanize"/>
+            </td>
+          </tr>
+        </template>
+        <template slot="expand" slot-scope="props">
+          <div>
+            <v-btn
+              target="_blank"
+              :href="props.item.trackingUrl"
+              v-if="props.item.trackingUrl">
+              Tracking UI - {{props.item.trackingUI}}
+            </v-btn>
+            <v-btn
+              target="_blank"
+              :href="props.item.amContainerLogs"
+              v-if="props.item.amContainerLogs">
+              Logs
+            </v-btn>
+            <v-btn
+              target="_blank"
+              :href="`${resourceManager}/cluster/app/${props.item.id}`"
+            >Resource Manager View
+            </v-btn>
+            <v-btn
+              color="error"
+              @click="attemptKillApp(props.item.id, props.item.name)"
+            >Kill App
+            </v-btn>
+          </div>
+        </template>
+      </v-data-table>
+    </template>
 
     <v-data-iterator
       content-tag="v-layout"
@@ -87,7 +89,7 @@
               <v-list-tile-content>
                 <v-list-tile-title>{{header.text}}</v-list-tile-title>
                 <v-list-tile-sub-title>
-                  <AppInfoLine :item="props.item" :header="header" :humanizeTimestamp="humanizeTimestamp"/>
+                  <AppInfoLine :item="props.item" :header="header" :humanizeTimestamp="humanize"/>
                 </v-list-tile-sub-title>
               </v-list-tile-content>
             </v-list-tile>
@@ -132,47 +134,7 @@
       viewStyleId: 0,
       snackbar: false,
       snackbarText: '',
-      humanizeTimestamp: true,
-      rowsPerPageItems: [16, 32, 64, {text: 'All', value: -1}],
-      headers: [
-        {text: 'App Id', sortable: true, value: 'id', visible: true},
-        {text: 'State', sortable: true, value: 'state', visible: true},
-        {text: 'Username', sortable: true, value: 'user', visible: true},
-        {text: 'App Name', sortable: true, value: 'name', visible: true},
-        {text: 'Queue', sortable: true, value: 'queue', visible: true},
-        {text: 'Final Status', sortable: true, value: 'finalStatus', visible: false},
-
-        {text: 'Started Time', sortable: true, value: 'startedTime', visible: true},
-        {text: 'Finished Time', sortable: true, value: 'finishedTime', visible: true},
-        {text: 'Elapsed Time', sortable: true, value: 'elapsedTime', visible: true},
-
-        {text: 'Allocated Memory(MB)', sortable: true, value: 'allocatedMB', visible: true},
-        {text: 'Allocated Vcores', sortable: true, value: 'allocatedVCores', visible: true},
-        {text: 'Running Containers', sortable: true, value: 'runningContainers', visible: true},
-        {text: 'Queue Usage(%)', sortable: true, value: 'queueUsagePercentage', visible: true},
-        {text: 'Memory Seconds', sortable: true, value: 'memorySeconds', visible: false},
-        {text: 'Vcore Seconds', sortable: true, value: 'vcoreSeconds', visible: false},
-        {text: 'Cluster Usage(%)', sortable: true, value: 'clusterUsagePercentage', visible: false},
-        {text: 'Preempted Memory(MB)', sortable: true, value: 'preemptedResourceMB', visible: false},
-        {text: 'Preempted Vcores', sortable: true, value: 'preemptedResourceVCores', visible: false},
-        {text: 'Preempted Non AM Container', sortable: true, value: 'numNonAMContainerPreempted', visible: false},
-        {text: 'Preempted AM Container', sortable: true, value: 'numAMContainerPreempted', visible: false},
-
-        {text: 'AM Host Address', sortable: true, value: 'amHostHttpAddress', visible: true},
-        {text: 'AM RPC Address', sortable: false, value: 'amRPCAddress', visible: false},
-
-        {text: 'Log Aggregation Status', sortable: true, value: 'logAggregationStatus', visible: true},
-        {text: 'Progress', sortable: true, value: 'progress', visible: false},
-        {text: 'Diagnostics', sortable: false, value: 'diagnostics', visible: false},
-        {text: 'Cluster Id', sortable: false, value: 'clusterId', visible: false},
-        {text: 'Application Type', sortable: true, value: 'applicationType', visible: true},
-        {text: 'Application Tags', sortable: false, value: 'applicationTags', visible: false},
-        {text: 'Priority', sortable: true, value: 'priority', visible: false},
-
-        {text: 'Unmanaged Application', sortable: true, value: 'unmanagedApplication', visible: false},
-        {text: 'App Node Label Expression', sortable: false, value: 'appNodeLabelExpression', visible: false},
-        {text: 'AM Node Label Expression', sortable: false, value: 'amNodeLabelExpression', visible: false}
-      ]
+      rowsPerPageItems: [16, 32, 64, {text: 'All', value: -1}]
     }),
     computed: {
       viewStyle () {
@@ -207,7 +169,7 @@
         return items.filter(i => i.name.includes(search))
       }
     },
-    props: ['apps', 'loading', 'resourceManager', 'searchByAppName'],
+    props: ['apps', 'loading', 'resourceManager', 'searchByAppName', 'humanize', 'headers'],
     components: {
       AppInfoLine
     }

@@ -1,5 +1,5 @@
 <template>
-  <v-app id="inspire" dark>
+  <v-app id="inspire" :dark="dark">
     <v-navigation-drawer
       fixed
       app
@@ -10,6 +10,8 @@
       <v-container fluid>
         <v-layout row wrap>
           <v-flex xs12>
+            <v-switch :label="`${dark ? 'Dark' : 'Light'} Theme`" v-model="dark"/>
+            <v-switch label="Humanize timestamp" v-model="humanize"/>
             <v-select
               v-model="appFilter.states"
               :items="availableStates"
@@ -67,12 +69,15 @@
     <v-toolbar app absolute clipped-left>
       <v-toolbar-side-icon @click.native="drawer = !drawer"/>
       <span class="title ml-3 mr-5">Yarn&nbsp;Vision</span>
+      <v-spacer/>
       <v-dialog v-model="resourceManagerDialog" persistent max-width="500px">
         <v-btn color="primary" dark slot="activator">{{resourceManager || 'Select a resource manager'}}</v-btn>
         <v-card>
           <v-card-title class="headline">Please select a resource manager</v-card-title>
           <v-card-text>
-            <v-select :loading="loading > 0" :items="resourceManagers" v-model="resourceManager"/>
+            <v-select :loading="loading > 0"
+                      label="Resource Manager"
+                      :items="resourceManagers" v-model="resourceManager"/>
           </v-card-text>
           <v-card-actions>
             <v-btn flat :loading="loading > 0" @click="loadResourceManagers">
@@ -92,7 +97,6 @@
         <v-icon>cached</v-icon>
         reload
       </v-btn>
-      <v-spacer/>
     </v-toolbar>
     <v-content>
       <YarnApplications
@@ -100,6 +104,8 @@
         :apps="apps"
         :resourceManager="resourceManager"
         :searchByAppName="searchByAppName"
+        :humanize="humanize"
+        :headers="headers"
       />
     </v-content>
   </v-app>
@@ -122,6 +128,8 @@
 
       return {
         drawer: null,
+        dark: localStorage.getItem('theme') === 'dark',
+        humanize: localStorage.getItem('humanize') !== false,
         loading: 0,
         apps: [],
         resourceManagerDialog: false,
@@ -138,7 +146,46 @@
         availableQueues: [],
         availableAppTypes: filterAppTypes,
         availableUsers: filterUser ? [filterUser] : [],
-        errorMessage: ''
+        errorMessage: '',
+        headers: [
+          {text: 'App Id', sortable: true, value: 'id', visible: true},
+          {text: 'State', sortable: true, value: 'state', visible: true},
+          {text: 'Username', sortable: true, value: 'user', visible: true},
+          {text: 'App Name', sortable: true, value: 'name', visible: true},
+          {text: 'Queue', sortable: true, value: 'queue', visible: true},
+          {text: 'Final Status', sortable: true, value: 'finalStatus', visible: false},
+
+          {text: 'Started Time', sortable: true, value: 'startedTime', visible: true},
+          {text: 'Finished Time', sortable: true, value: 'finishedTime', visible: true},
+          {text: 'Elapsed Time', sortable: true, value: 'elapsedTime', visible: true},
+
+          {text: 'AM Host Address', sortable: true, value: 'amHostHttpAddress', visible: true},
+          {text: 'AM RPC Address', sortable: false, value: 'amRPCAddress', visible: false},
+
+          {text: 'Allocated Vcores', sortable: true, value: 'allocatedVCores', visible: true},
+          {text: 'Allocated Memory(MB)', sortable: true, value: 'allocatedMB', visible: true},
+          {text: 'Running Containers', sortable: true, value: 'runningContainers', visible: true},
+          {text: 'Queue Usage(%)', sortable: true, value: 'queueUsagePercentage', visible: true},
+          {text: 'Memory Seconds', sortable: true, value: 'memorySeconds', visible: false},
+          {text: 'Vcore Seconds', sortable: true, value: 'vcoreSeconds', visible: false},
+          {text: 'Cluster Usage(%)', sortable: true, value: 'clusterUsagePercentage', visible: false},
+          {text: 'Preempted Memory(MB)', sortable: true, value: 'preemptedResourceMB', visible: false},
+          {text: 'Preempted Vcores', sortable: true, value: 'preemptedResourceVCores', visible: false},
+          {text: 'Preempted Non AM Container', sortable: true, value: 'numNonAMContainerPreempted', visible: false},
+          {text: 'Preempted AM Container', sortable: true, value: 'numAMContainerPreempted', visible: false},
+
+          {text: 'Log Aggregation Status', sortable: true, value: 'logAggregationStatus', visible: true},
+          {text: 'Progress', sortable: true, value: 'progress', visible: false},
+          {text: 'Diagnostics', sortable: false, value: 'diagnostics', visible: false},
+          {text: 'Cluster Id', sortable: false, value: 'clusterId', visible: false},
+          {text: 'Application Type', sortable: true, value: 'applicationType', visible: true},
+          {text: 'Application Tags', sortable: false, value: 'applicationTags', visible: false},
+          {text: 'Priority', sortable: true, value: 'priority', visible: false},
+
+          {text: 'Unmanaged Application', sortable: true, value: 'unmanagedApplication', visible: false},
+          {text: 'App Node Label Expression', sortable: false, value: 'appNodeLabelExpression', visible: false},
+          {text: 'AM Node Label Expression', sortable: false, value: 'amNodeLabelExpression', visible: false}
+        ]
       }
     },
     components: {
@@ -228,6 +275,12 @@
       resourceManager: function (val) {
         this.loadApps()
         this.loadQueues()
+      },
+      dark (dark) {
+        localStorage.setItem('theme', dark ? 'dark' : 'light')
+      },
+      humanize (humanize) {
+        localStorage.setItem('humanize', humanize)
       }
     },
     mounted () {
