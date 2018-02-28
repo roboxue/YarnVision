@@ -61,6 +61,24 @@
               label="Filter by app name"
               prepend-icon="search"
             />
+            <v-divider/>
+            <v-list>
+              <v-list-group no-action>
+                <v-list-tile slot="activator">
+                  <v-list-tile-content>
+                    <v-list-tile-title>Data Fields Visibility</v-list-tile-title>
+                  </v-list-tile-content>
+                </v-list-tile>
+                <v-list-tile v-for="(header, i) in headers" :key="i" @click="header.visible = !header.visible">
+                  <v-list-tile-content>
+                    <v-list-tile-title>{{ header.text }}</v-list-tile-title>
+                  </v-list-tile-content>
+                  <v-list-tile-action>
+                    <v-icon :color="header.visible ? 'grey' : 'red'">{{ header.visible ? 'visibility' : 'visibility_off' }}</v-icon>
+                  </v-list-tile-action>
+                </v-list-tile>
+              </v-list-group>
+            </v-list>
           </v-flex>
         </v-layout>
       </v-container>
@@ -147,6 +165,7 @@
         availableAppTypes: filterAppTypes,
         availableUsers: filterUser ? [filterUser] : [],
         errorMessage: '',
+        headerGroup: true,
         headers: [
           {text: 'App Id', sortable: true, value: 'id', visible: true},
           {text: 'State', sortable: true, value: 'state', visible: true},
