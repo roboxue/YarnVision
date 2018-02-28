@@ -29,6 +29,8 @@
       :items="apps"
       :rows-per-page-items="rowsPerPageItems"
       :headers="visibleHeaders"
+      :search="searchByAppName"
+      :custom-filter="appFilter"
     >
       <template slot="items" slot-scope="props">
         <tr @click="props.expanded = !props.expanded" style="cursor: pointer;">
@@ -54,11 +56,13 @@
           <v-btn
             target="_blank"
             :href="`${resourceManager}/cluster/app/${props.item.id}`"
-          >Resource Manager View</v-btn>
+          >Resource Manager View
+          </v-btn>
           <v-btn
             color="error"
             @click="attemptKillApp(props.item.id, props.item.name)"
-          >Kill App</v-btn>
+          >Kill App
+          </v-btn>
         </div>
       </template>
     </v-data-table>
@@ -69,11 +73,13 @@
       :loading="loading"
       :items="apps"
       :rows-per-page-items="rowsPerPageItems"
+      :search="searchByAppName"
+      :custom-filter="appFilter"
       row
       wrap
     >
       <v-flex slot="item" slot-scope="props" xs12 sm6 md4 lg3>
-        <v-card :color="colorByState(props.item.state)" class="white--text">
+        <v-card>
           <v-card-title><h4>{{props.item.name}}</h4></v-card-title>
           <v-divider/>
           <v-list dense two-line subheader v-for="(header, i) in visibleHeaders" :key="i">
@@ -86,6 +92,30 @@
               </v-list-tile-content>
             </v-list-tile>
           </v-list>
+          <v-card-actions>
+            <v-btn
+              target="_blank"
+              :href="props.item.trackingUrl"
+              v-if="props.item.trackingUrl">
+              Tracking
+            </v-btn>
+            <v-btn
+              target="_blank"
+              :href="props.item.amContainerLogs"
+              v-if="props.item.amContainerLogs">
+              Logs
+            </v-btn>
+            <v-btn
+              target="_blank"
+              :href="`${resourceManager}/cluster/app/${props.item.id}`">
+              App
+            </v-btn>
+            <v-btn
+              color="error"
+              @click="attemptKillApp(props.item.id, props.item.name)">
+              Kill
+            </v-btn>
+          </v-card-actions>
         </v-card>
       </v-flex>
     </v-data-iterator>
@@ -101,16 +131,20 @@
     data: () => ({
       viewStyleId: 0,
       snackbar: false,
-      snackbarText: "",
+      snackbarText: '',
       humanizeTimestamp: true,
-      rowsPerPageItems: [8, 16, 32, 64, {text: 'All', value: -1}],
+      rowsPerPageItems: [16, 32, 64, {text: 'All', value: -1}],
       headers: [
         {text: 'App Id', sortable: true, value: 'id', visible: true},
         {text: 'State', sortable: true, value: 'state', visible: true},
         {text: 'Username', sortable: true, value: 'user', visible: true},
         {text: 'App Name', sortable: true, value: 'name', visible: true},
         {text: 'Queue', sortable: true, value: 'queue', visible: true},
-        {text: 'Final Status', sortable: true, value: 'finalStatus', visible: true},
+        {text: 'Final Status', sortable: true, value: 'finalStatus', visible: false},
+
+        {text: 'Started Time', sortable: true, value: 'startedTime', visible: true},
+        {text: 'Finished Time', sortable: true, value: 'finishedTime', visible: true},
+        {text: 'Elapsed Time', sortable: true, value: 'elapsedTime', visible: true},
 
         {text: 'Allocated Memory(MB)', sortable: true, value: 'allocatedMB', visible: true},
         {text: 'Allocated Vcores', sortable: true, value: 'allocatedVCores', visible: true},
@@ -135,10 +169,6 @@
         {text: 'Application Tags', sortable: false, value: 'applicationTags', visible: false},
         {text: 'Priority', sortable: true, value: 'priority', visible: false},
 
-        {text: 'Started Time', sortable: true, value: 'startedTime', visible: true},
-        {text: 'Finished Time', sortable: true, value: 'finishedTime', visible: true},
-        {text: 'Elapsed Time', sortable: true, value: 'elapsedTime', visible: true},
-
         {text: 'Unmanaged Application', sortable: true, value: 'unmanagedApplication', visible: false},
         {text: 'App Node Label Expression', sortable: false, value: 'appNodeLabelExpression', visible: false},
         {text: 'AM Node Label Expression', sortable: false, value: 'amNodeLabelExpression', visible: false}
@@ -154,26 +184,12 @@
       }
     },
     methods: {
-      colorByState (state) {
-        switch (state) {
-          case 'RUNNING':
-            return 'success'
-          case 'FAILED':
-            return 'error'
-          case 'FINISHED':
-            return 'primary'
-          case 'KILLED':
-            return 'warning'
-          default:
-            return 'grey darken-1'
-        }
-      },
       attemptKillApp (appId, appName) {
         let vm = this
-        let confirmedName = prompt("Type application name again to confirm killing the application");
+        let confirmedName = prompt('Type application name again to confirm killing the application')
         if (confirmedName != null && confirmedName === appName) {
-          axios.put(`/hadoopapi/ws/v1/cluster/apps/${appId}/state`,  {
-            state: "KILLED"
+          axios.put(`/hadoopapi/ws/v1/cluster/apps/${appId}/state`, {
+            state: 'KILLED'
           }, {
             headers: {'X-Resource-Manager': vm.resourceManager}
           }).then((response) => {
@@ -186,9 +202,12 @@
           vm.snackbarText = `App name mismatch, no action`
           vm.snackbar = true
         }
+      },
+      appFilter (items, search) {
+        return items.filter(i => i.name.includes(search))
       }
     },
-    props: ['apps', 'loading', 'resourceManager'],
+    props: ['apps', 'loading', 'resourceManager', 'searchByAppName'],
     components: {
       AppInfoLine
     }

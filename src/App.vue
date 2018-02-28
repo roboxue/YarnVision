@@ -54,6 +54,11 @@
               bottom
               clearable
             />
+            <v-text-field
+              v-model="searchByAppName"
+              label="Filter by app name"
+              prepend-icon="search"
+            />
           </v-flex>
         </v-layout>
       </v-container>
@@ -94,6 +99,7 @@
         :loading="loading > 0"
         :apps="apps"
         :resourceManager="resourceManager"
+        :searchByAppName="searchByAppName"
       />
     </v-content>
   </v-app>
@@ -127,6 +133,7 @@
           user: filterUser,
           queue: ''
         },
+        searchByAppName: '',
         availableStates: ['ACCEPTED', 'RUNNING', 'FINISHED', 'FAILED', 'KILLED'],
         availableQueues: [],
         availableAppTypes: filterAppTypes,
@@ -155,7 +162,6 @@
           params: vm.getSearchParams()
         })
           .then((response) => {
-            console.log(_.uniq(response.data.apps.app.map(app => app.applicationType)))
             vm.loading--
             vm.availableAppTypes = _.union(vm.availableAppTypes, response.data.apps.app.map(app => app.applicationType))
             vm.availableUsers = _.union(vm.availableUsers, response.data.apps.app.map(app => app.user)).sort()
