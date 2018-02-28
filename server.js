@@ -16,6 +16,7 @@ app.use('/hadoopapi', function (req, res, next) {
   let hadoopApi = req.get('X-Resource-Manager')
   proxy({
     target: hadoopApi,
+    logLevel: 'warn',
     pathRewrite: {'^/hadoopapi': ''},
     changeOrigin: true
   })(req, res, next)
