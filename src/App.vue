@@ -3,13 +3,45 @@
     <v-navigation-drawer
       fixed
       app
-      clipped
-      disable-resize-watcher
       v-model="drawer"
     >
       <v-container fluid>
         <v-layout row wrap>
           <v-flex xs12>
+            <v-list three-line>
+              <v-list-tile>
+                <v-list-tile-content>
+                  <v-list-tile-title>Resource Manager</v-list-tile-title>
+                  <v-list-tile-sub-title>
+                    <span>{{resourceManager}}</span>
+                  </v-list-tile-sub-title>
+                </v-list-tile-content>
+              </v-list-tile>
+            </v-list>
+            <v-dialog v-model="resourceManagerDialog" persistent max-width="500px">
+              <v-btn color="primary" dark slot="activator">Change ...</v-btn>
+              <v-card>
+                <v-card-title class="headline">Please select a resource manager</v-card-title>
+                <v-card-text>
+                  <v-select :loading="loading > 0"
+                            label="Resource Manager"
+                            :items="resourceManagers" v-model="resourceManager"/>
+                </v-card-text>
+                <v-card-actions>
+                  <v-btn flat :loading="loading > 0" @click="loadResourceManagers">
+                    <v-icon>refresh</v-icon>
+                    Refresh
+                  </v-btn>
+                  <v-spacer/>
+                  <v-btn flat
+                         @click.native="closeResourceManagerDialog"
+                         :disabled="resourceManager === ''"
+                         :loading="loading > 0">Close
+                  </v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+            <v-divider/>
             <v-switch :label="`${dark ? 'Dark' : 'Light'} Theme`" v-model="dark"/>
             <v-switch label="Humanize timestamp" v-model="humanize"/>
             <v-select
@@ -84,33 +116,10 @@
       </v-container>
 
     </v-navigation-drawer>
-    <v-toolbar app absolute clipped-left>
+    <v-toolbar app fixed>
       <v-toolbar-side-icon @click.native="drawer = !drawer"/>
       <span class="title ml-3 mr-5">Yarn&nbsp;Vision</span>
       <v-spacer/>
-      <v-dialog v-model="resourceManagerDialog" persistent max-width="500px">
-        <v-btn color="primary" dark slot="activator">{{resourceManager || 'Select a resource manager'}}</v-btn>
-        <v-card>
-          <v-card-title class="headline">Please select a resource manager</v-card-title>
-          <v-card-text>
-            <v-select :loading="loading > 0"
-                      label="Resource Manager"
-                      :items="resourceManagers" v-model="resourceManager"/>
-          </v-card-text>
-          <v-card-actions>
-            <v-btn flat :loading="loading > 0" @click="loadResourceManagers">
-              <v-icon>refresh</v-icon>
-              Refresh
-            </v-btn>
-            <v-spacer/>
-            <v-btn flat
-                   @click.native="closeResourceManagerDialog"
-                   :disabled="resourceManager === ''"
-                   :loading="loading > 0">Close
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
       <v-btn :loading="loading > 0" @click="loadApps">
         <v-icon>cached</v-icon>
         reload
@@ -167,10 +176,10 @@
         errorMessage: '',
         headerGroup: true,
         headers: [
-          {text: 'App Id', sortable: true, value: 'id', visible: true},
+          {text: 'App Name', sortable: true, value: 'name', visible: true},
           {text: 'State', sortable: true, value: 'state', visible: true},
           {text: 'Username', sortable: true, value: 'user', visible: true},
-          {text: 'App Name', sortable: true, value: 'name', visible: true},
+          {text: 'App Id', sortable: true, value: 'id', visible: true},
           {text: 'Queue', sortable: true, value: 'queue', visible: true},
           {text: 'Final Status', sortable: true, value: 'finalStatus', visible: false},
 
