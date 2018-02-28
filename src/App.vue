@@ -39,9 +39,6 @@
               item-text="queueName"
               item-value="queueName"
               autocomplete
-              chips
-              deletableChips
-              multiple
               bottom
               clearable
             />
@@ -74,13 +71,15 @@
           </v-card-text>
           <v-card-actions>
             <v-btn flat :loading="loading > 0" @click="loadResourceManagers">
-              <v-icon>refresh</v-icon> Refresh
+              <v-icon>refresh</v-icon>
+              Refresh
             </v-btn>
             <v-spacer/>
             <v-btn flat
                    @click.native="closeResourceManagerDialog"
                    :disabled="resourceManager === ''"
-                   :loading="loading > 0">Close</v-btn>
+                   :loading="loading > 0">Close
+            </v-btn>
           </v-card-actions>
         </v-card>
       </v-dialog>
@@ -103,68 +102,79 @@
 <script>
   import YarnApplications from './components/YarnApplications'
   import axios from 'axios'
-  import Qs from 'qs'
   import _ from 'lodash'
+  import URI from 'urijs'
 
   export default {
-    data: () => ({
-      drawer: null,
-      loading: 0,
-      apps: [],
-      resourceManagerDialog: false,
-      resourceManagers: [],
-      resourceManager: localStorage.getItem('resourceManager') || '',
-      appFilter: {
-        states: ['RUNNING'],
-        appTypes: [],
-        user: '',
-        queue: ''
-      },
-      availableStates: ['ACCEPTED', 'RUNNING', 'FINISHED', 'FAILED', 'KILLED'],
-      availableQueues: [],
-      availableAppTypes: [],
-      availableUsers: [],
-      errorMessage: ''
-    }),
+    data: () => {
+      const qs = URI(location).search(true)
+      let filterStates = _.get(qs, 'states')
+      filterStates = filterStates ? filterStates.split(',') : ['RUNNING']
+      let filterAppTypes = _.get(qs, 'applicationTypes')
+      filterAppTypes = filterAppTypes ? filterAppTypes.split(',') : []
+      let filterUser = _.get(qs, 'user', '')
+
+      return {
+        drawer: null,
+        loading: 0,
+        apps: [],
+        resourceManagerDialog: false,
+        resourceManagers: [],
+        resourceManager: localStorage.getItem('resourceManager') || '',
+        appFilter: {
+          states: filterStates,
+          appTypes: filterAppTypes,
+          user: filterUser,
+          queue: ''
+        },
+        availableStates: ['ACCEPTED', 'RUNNING', 'FINISHED', 'FAILED', 'KILLED'],
+        availableQueues: [],
+        availableAppTypes: filterAppTypes,
+        availableUsers: filterUser ? [filterUser] : [],
+        errorMessage: ''
+      }
+    },
     components: {
       YarnApplications
     },
     methods: {
+      getSearchParams () {
+        let vm = this
+        return _.pickBy({
+          states: vm.appFilter.states.join(','),
+          user: vm.appFilter.user,
+          applicationTypes: vm.appFilter.appTypes.join(','),
+          queue: vm.appFilter.queue
+        }, _.identity)
+      },
       loadApps () {
         let vm = this
-        vm.loading ++
-        axios.get('/api/ws/v1/cluster/apps', {
+        vm.loading++
+        axios.get('/hadoopapi/ws/v1/cluster/apps', {
           headers: {'X-Resource-Manager': vm.resourceManager},
-          params: {
-            states: vm.appFilter.states.join(','),
-            user: vm.appFilter.user,
-            applicationTypes: vm.appFilter.appTypes.join(','),
-            queue: vm.appFilter.queue
-          },
-          paramsSerializer: function (params) {
-            return Qs.stringify(_.pickBy(params, _.identity), {arrayFormat: 'brackets'})
-          }
+          params: vm.getSearchParams()
         })
           .then((response) => {
-            vm.loading --
+            console.log(_.uniq(response.data.apps.app.map(app => app.applicationType)))
+            vm.loading--
             vm.availableAppTypes = _.union(vm.availableAppTypes, response.data.apps.app.map(app => app.applicationType))
             vm.availableUsers = _.union(vm.availableUsers, response.data.apps.app.map(app => app.user)).sort()
             vm.apps = response.data.apps.app
           })
           .catch((error) => {
-            vm.loading --
+            vm.loading--
             vm.errorMessage = error
             vm.apps = []
           })
       },
       loadQueues () {
         let vm = this
-        vm.loading ++
-        axios.get('/api/ws/v1/cluster/scheduler', {
+        vm.loading++
+        axios.get('/hadoopapi/ws/v1/cluster/scheduler', {
           headers: {'X-Resource-Manager': vm.resourceManager},
         })
           .then((response) => {
-            vm.loading --
+            vm.loading--
             let queues = []
             let iterateParentQueue = function (q) {
               if (_.has(q, 'queues')) {
@@ -177,7 +187,7 @@
             vm.availableQueues = _.sortBy(queues, ['queueName'])
           })
           .catch((error) => {
-            vm.loading --
+            vm.loading--
             vm.errorMessage = error
             vm.availableQueues = []
           })
@@ -185,7 +195,7 @@
       loadResourceManagers () {
         let vm = this
         vm.loading++
-        axios.get('/resourcemanagers')
+        axios.get('/api/resourcemanagers')
           .then((response) => {
             vm.resourceManagers = response.data
             vm.loading--
@@ -203,7 +213,9 @@
     watch: {
       appFilter: {
         handler (val) {
-          this.loadApps()
+          let vm = this
+          vm.loadApps()
+          window.history.pushState(null, '', URI(location).search(vm.getSearchParams()))
         },
         deep: true
       },

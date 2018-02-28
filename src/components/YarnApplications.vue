@@ -172,8 +172,7 @@
         let vm = this
         let confirmedName = prompt("Type application name again to confirm killing the application");
         if (confirmedName != null && confirmedName === appName) {
-          console.log(vm.resourceManager)
-          axios.put(`/api/ws/v1/cluster/apps/${appId}/state`,  {
+          axios.put(`/hadoopapi/ws/v1/cluster/apps/${appId}/state`,  {
             state: "KILLED"
           }, {
             headers: {'X-Resource-Manager': vm.resourceManager}
