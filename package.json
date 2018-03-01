@@ -1,6 +1,6 @@
 {
   "name": "yarn-vision",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Hadoop Web API UI",
   "author": "Robert Xue <roboxue@roboxue.com>",
   "private": true,
