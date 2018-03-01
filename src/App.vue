@@ -1,9 +1,9 @@
 <template>
-  <v-app id="inspire" :dark="dark">
+  <v-app id="inspire" :dark="ui.dark">
     <v-navigation-drawer
       fixed
       app
-      v-model="drawer"
+      v-model="ui.drawer"
     >
       <v-container fluid>
         <v-layout row wrap>
@@ -18,7 +18,7 @@
                 </v-list-tile-content>
               </v-list-tile>
             </v-list>
-            <v-dialog v-model="resourceManagerDialog" persistent max-width="500px">
+            <v-dialog v-model="ui.resourceManagerDialog" persistent max-width="500px">
               <v-btn color="primary" dark slot="activator">Change ...</v-btn>
               <v-card>
                 <v-card-title class="headline">Please select a resource manager</v-card-title>
@@ -42,8 +42,8 @@
               </v-card>
             </v-dialog>
             <v-divider/>
-            <v-switch :label="`${dark ? 'Dark' : 'Light'} Theme`" v-model="dark"/>
-            <v-switch label="Humanize timestamp" v-model="humanize"/>
+            <v-switch :label="`${ui.dark ? 'Dark' : 'Light'} Theme`" v-model="ui.dark"/>
+            <v-switch label="Humanize timestamp" v-model="ui.humanize"/>
             <v-select
               v-model="appFilter.states"
               :items="availableStates"
@@ -106,7 +106,9 @@
                     <v-list-tile-title>{{ header.text }}</v-list-tile-title>
                   </v-list-tile-content>
                   <v-list-tile-action>
-                    <v-icon :color="header.visible ? 'grey' : 'red'">{{ header.visible ? 'visibility' : 'visibility_off' }}</v-icon>
+                    <v-icon :color="header.visible ? 'grey' : 'red'">
+                      {{ header.visible ? 'visibility' : 'visibility_off' }}
+                    </v-icon>
                   </v-list-tile-action>
                 </v-list-tile>
               </v-list-group>
@@ -117,12 +119,16 @@
 
     </v-navigation-drawer>
     <v-toolbar app fixed>
-      <v-toolbar-side-icon @click.native="drawer = !drawer"/>
-      <span class="title ml-3 mr-5">Yarn&nbsp;Vision</span>
-      <v-spacer/>
+      <v-toolbar-side-icon @click.native="ui.drawer = !ui.drawer"/>
+      <v-toolbar-title>Yarn&nbsp;Vision v{{meta.version}}</v-toolbar-title>
       <v-btn :loading="loading > 0" @click="loadApps">
         <v-icon>cached</v-icon>
         reload
+      </v-btn>
+      <v-spacer/>
+      <v-btn :href="meta.repository.url" target="_blank">
+        <v-icon>code</v-icon>
+        {{meta.repository.type}}
       </v-btn>
     </v-toolbar>
     <v-content>
@@ -131,7 +137,7 @@
         :apps="apps"
         :resourceManager="resourceManager"
         :searchByAppName="searchByAppName"
-        :humanize="humanize"
+        :humanize="ui.humanize"
         :headers="headers"
       />
     </v-content>
@@ -143,6 +149,7 @@
   import axios from 'axios'
   import _ from 'lodash'
   import URI from 'urijs'
+  import meta from '../package.json'
 
   export default {
     data: () => {
@@ -154,12 +161,15 @@
       let filterUser = _.get(qs, 'user', '')
 
       return {
-        drawer: null,
-        dark: localStorage.getItem('theme') === 'dark',
-        humanize: localStorage.getItem('humanize') !== false,
+        meta: meta,
+        ui: {
+          drawer: null,
+          dark: localStorage.getItem('theme') === 'dark',
+          humanize: localStorage.getItem('humanize') !== false,
+          resourceManagerDialog: false
+        },
         loading: 0,
         apps: [],
-        resourceManagerDialog: false,
         resourceManagers: [],
         resourceManager: localStorage.getItem('resourceManager') || '',
         appFilter: {
@@ -174,7 +184,6 @@
         availableAppTypes: filterAppTypes,
         availableUsers: filterUser ? [filterUser] : [],
         errorMessage: '',
-        headerGroup: true,
         headers: [
           {text: 'App Name', sortable: true, value: 'name', visible: true},
           {text: 'State', sortable: true, value: 'state', visible: true},
@@ -287,7 +296,7 @@
           })
       },
       closeResourceManagerDialog () {
-        this.resourceManagerDialog = false
+        this.ui.resourceManagerDialog = false
         localStorage.setItem('resourceManager', this.resourceManager)
       }
     },
@@ -304,17 +313,17 @@
         this.loadApps()
         this.loadQueues()
       },
-      dark (dark) {
+      'ui.dark': function (dark) {
         localStorage.setItem('theme', dark ? 'dark' : 'light')
       },
-      humanize (humanize) {
+      'ui.humanize': function (humanize) {
         localStorage.setItem('humanize', humanize)
       }
     },
     mounted () {
       this.loadResourceManagers()
       if (this.resourceManager === '') {
-        this.resourceManagerDialog = true
+        this.ui.resourceManagerDialog = true
       } else {
         this.loadApps()
         this.loadQueues()

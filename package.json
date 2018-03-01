@@ -2,8 +2,13 @@
   "name": "yarn-vision",
   "version": "1.0.1",
   "description": "Hadoop Web API UI",
-  "author": "Robert Xue <rxue@groupon.com>",
+  "author": "Robert Xue <roboxue@roboxue.com>",
   "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "github",
+    "url": "https://github.com/roboxue/YarnVision"
+  },
   "scripts": {
     "dev": "webpack-dev-server --inline --progress --config build/webpack.dev.conf.js",
     "start": "node server.js",
