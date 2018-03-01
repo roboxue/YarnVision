@@ -18,5 +18,15 @@ You need to have your yarn's resource manager deployed, and execute YarnVision c
 5. open `http://localhost:3000`
 
 ### Use with docker
-`docker run -p 8000:3000 -d roboxue/yarn_vision:latest http://my-yarn-resourcemanager.location:<port>` then open a browser and point to the port 8000 of your docker host
+- `docker pull roboxue/yarn_vision:latest`
+- `docker run -p 8000:3000 -d roboxue/yarn_vision:latest http://my-yarn-resourcemanager.location:<port>` then open a browser and point to the port 8000 of your docker host
 
+### Dev setup
+- start backend on port 3000: `node server.js`
+- start frontend on port 8080: `npm run dev`
+- any change in frontend (src/ folder) will be reflected on port 8080
+- any change in backend will be reflected on port 3000
+- changes in frontend will be reflected on port 3000 after executing `npm run build`
+
+### Update version
+- `npm version major/minor/patch
