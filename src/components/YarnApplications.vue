@@ -8,20 +8,20 @@
       {{ snackbarText }}
       <v-btn flat color="pink" @click.native="snackbar = false">Close</v-btn>
     </v-snackbar>
-    <v-layout row>
-      <v-flex xs12>
-        <v-btn-toggle mandatory v-model="viewStyleId">
-          <v-btn flat>
-            <v-icon>list</v-icon>
-            list view
-          </v-btn>
-          <v-btn flat>
-            <v-icon>dashboard</v-icon>
-            card view
-          </v-btn>
-        </v-btn-toggle>
-      </v-flex>
-    </v-layout>
+    <v-toolbar>
+      <v-toolbar-title>{{apps.length}} Apps</v-toolbar-title>
+      <v-spacer/>
+      <v-btn-toggle mandatory v-model="viewStyleId">
+        <v-btn flat>
+          <v-icon>list</v-icon>
+          list view
+        </v-btn>
+        <v-btn flat>
+          <v-icon>dashboard</v-icon>
+          card view
+        </v-btn>
+      </v-btn-toggle>
+    </v-toolbar>
 
     <template v-if="viewStyle === 'table'">
       <p class="pl-2 pt-2 title">Click row to reveal actions</p>
@@ -131,7 +131,7 @@
 
   export default {
     data: () => ({
-      viewStyleId: 0,
+      viewStyleId: parseInt(localStorage.getItem('viewStyleId')) || 0,
       snackbar: false,
       snackbarText: '',
       rowsPerPageItems: [16, 32, 64, {text: 'All', value: -1}]
@@ -167,6 +167,11 @@
       },
       appFilter (items, search) {
         return items.filter(i => i.name.includes(search))
+      }
+    },
+    watch: {
+      viewStyleId (id) {
+        localStorage.setItem('viewStyleId', id)
       }
     },
     props: ['apps', 'loading', 'resourceManager', 'searchByAppName', 'humanize', 'headers'],

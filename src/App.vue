@@ -8,93 +8,78 @@
       <v-container fluid>
         <v-layout row wrap>
           <v-flex xs12>
-            <v-list three-line>
-              <v-list-tile>
-                <v-list-tile-content>
-                  <v-list-tile-title>Resource Manager</v-list-tile-title>
-                  <v-list-tile-sub-title>
-                    <span>{{resourceManager}}</span>
-                  </v-list-tile-sub-title>
-                </v-list-tile-content>
-              </v-list-tile>
-            </v-list>
-            <v-dialog v-model="ui.resourceManagerDialog" persistent max-width="500px">
-              <v-btn color="primary" dark slot="activator">Change ...</v-btn>
-              <v-card>
-                <v-card-title class="headline">Please select a resource manager</v-card-title>
-                <v-card-text>
-                  <v-select :loading="loading > 0"
-                            label="Resource Manager"
-                            :items="resourceManagers" v-model="resourceManager"/>
-                </v-card-text>
-                <v-card-actions>
-                  <v-btn flat :loading="loading > 0" @click="loadResourceManagers">
-                    <v-icon>refresh</v-icon>
-                    Refresh
-                  </v-btn>
-                  <v-spacer/>
-                  <v-btn flat
-                         @click.native="closeResourceManagerDialog"
-                         :disabled="resourceManager === ''"
-                         :loading="loading > 0">Close
-                  </v-btn>
-                </v-card-actions>
-              </v-card>
-            </v-dialog>
-            <v-divider/>
-            <v-switch :label="`${ui.dark ? 'Dark' : 'Light'} Theme`" v-model="ui.dark"/>
-            <v-switch label="Humanize timestamp" v-model="ui.humanize"/>
-            <v-select
-              v-model="appFilter.states"
-              :items="availableStates"
-              label="Filter by state"
-              prepend-icon="apps"
-              autocomplete
-              chips
-              deletableChips
-              multiple
-              bottom
-              clearable
-            />
-            <v-select
-              v-model="appFilter.user"
-              :items="availableUsers"
-              label="Filter by username"
-              prepend-icon="account_box"
-              autocomplete
-              clearable
-              bottom
-            />
-            <v-select
-              v-model="appFilter.queue"
-              :items="availableQueues"
-              label="Filter by queue"
-              prepend-icon="playlist_add"
-              item-text="queueName"
-              item-value="queueName"
-              autocomplete
-              bottom
-              clearable
-            />
-            <v-select
-              v-model="appFilter.appTypes"
-              :items="availableAppTypes"
-              label="Filter by app type"
-              prepend-icon="description"
-              autocomplete
-              chips
-              deletableChips
-              multiple
-              bottom
-              clearable
-            />
-            <v-text-field
-              v-model="searchByAppName"
-              label="Filter by app name"
-              prepend-icon="search"
-            />
+            <v-subheader>Resource Manager</v-subheader>
+            <v-card flat>
+              <v-card-title>
+                <div>{{resourceManager}}</div>
+              </v-card-title>
+              <v-card-actions>
+                <v-btn flat @click.native.stop="ui.resourceManagerDialog = true">
+                  <v-icon>swap_horiz</v-icon>
+                  switch
+                </v-btn>
+              </v-card-actions>
+            </v-card>
             <v-divider/>
             <v-list>
+              <v-subheader>Filters</v-subheader>
+              <v-select
+                v-model="appFilter.states"
+                :items="availableStates"
+                label="Filter by state"
+                prepend-icon="apps"
+                autocomplete
+                chips
+                deletableChips
+                multiple
+                dense=""
+                clearable
+              />
+              <v-select
+                v-model="appFilter.user"
+                :items="availableUsers"
+                label="Filter by username"
+                prepend-icon="account_box"
+                autocomplete
+                clearable
+                dense
+              />
+              <v-select
+                v-model="appFilter.queue"
+                :items="availableQueues"
+                label="Filter by queue"
+                prepend-icon="playlist_add"
+                item-text="queueName"
+                item-value="queueName"
+                autocomplete
+                dense
+                clearable
+              />
+              <v-select
+                v-model="appFilter.appTypes"
+                :items="availableAppTypes"
+                label="Filter by app type"
+                prepend-icon="description"
+                autocomplete
+                chips
+                deletableChips
+                multiple
+                dense
+                clearable
+              />
+              <v-text-field
+                v-model="searchByAppName"
+                label="Filter by app name"
+                prepend-icon="search"
+              />
+              <v-divider/>
+              <v-subheader>Preference</v-subheader>
+              <v-list-tile>
+                <v-switch :label="`${ui.dark ? 'Dark' : 'Light'} Theme`" v-model="ui.dark"/>
+              </v-list-tile>
+              <v-list-tile>
+                <v-switch label="Humanize timestamp" v-model="ui.humanize"/>
+              </v-list-tile>
               <v-list-group no-action>
                 <v-list-tile slot="activator">
                   <v-list-tile-content>
@@ -112,6 +97,15 @@
                   </v-list-tile-action>
                 </v-list-tile>
               </v-list-group>
+              <v-divider/>
+              <v-list-tile :href="meta.repository.url" target="_blank">
+                <v-list-tile-action>
+                  <i class="fab fa-github fa-lg"></i>
+                </v-list-tile-action>
+                <v-list-tile-content>
+                  <v-list-tile-title>Source code</v-list-tile-title>
+                </v-list-tile-content>
+              </v-list-tile>
             </v-list>
           </v-flex>
         </v-layout>
@@ -121,15 +115,10 @@
     <v-toolbar app fixed>
       <v-toolbar-side-icon @click.native="ui.drawer = !ui.drawer"/>
       <v-toolbar-title>Yarn&nbsp;Vision v{{meta.version}}</v-toolbar-title>
-      <v-btn :loading="loading > 0" @click="loadApps">
+      <v-btn icon :loading="loading > 0" @click="loadApps">
         <v-icon>cached</v-icon>
-        reload
       </v-btn>
       <v-spacer/>
-      <v-btn :href="meta.repository.url" target="_blank">
-        <v-icon>code</v-icon>
-        {{meta.repository.type}}
-      </v-btn>
     </v-toolbar>
     <v-content>
       <YarnApplications
@@ -141,6 +130,28 @@
         :headers="headers"
       />
     </v-content>
+    <v-dialog v-model="ui.resourceManagerDialog" persistent max-width="500px">
+      <v-card>
+        <v-card-title class="headline">Please select a resource manager</v-card-title>
+        <v-card-text>
+          <v-select :loading="loading > 0"
+                    label="Resource Manager"
+                    :items="resourceManagers" v-model="resourceManager"/>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn flat :loading="loading > 0" @click="loadResourceManagers">
+            <v-icon>refresh</v-icon>
+            Refresh
+          </v-btn>
+          <v-spacer/>
+          <v-btn flat
+                 @click.native="closeResourceManagerDialog"
+                 :disabled="resourceManager === ''"
+                 :loading="loading > 0">Close
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-app>
 </template>
 
